@@ -1,4 +1,9 @@
-import edu.princeton.cs.algs4.*;
+import edu.princeton.cs.algs4.Bag;
+import edu.princeton.cs.algs4.FlowEdge;
+import edu.princeton.cs.algs4.FlowNetwork;
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.FordFulkerson;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,52 +44,75 @@ public class BaseballElimination {
         int numGames = (n - 1) * (n - 2) / 2;
 
         for (int x = 0; x < n; ++x) {
+
+            boolean flag = false;
+            for (int i = 0; i < n; ++i) {
+                if (i != x && wins[x] + remaining[x] - wins[i] < 0) {
+                    Bag<String> certificate = new Bag<>();
+                    certificate.add(teams.get(i));
+                    for (int j = i + 1; j < n; ++j)
+                        if (j != x && wins[x] + remaining[x] - wins[j] < 0)
+                            certificate.add(teams.get(j));
+                    elimination.add(certificate);
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag)
+                continue;
+
+
             FlowNetwork flowNetwork = new FlowNetwork(1 + numGames + n);
+            FlowEdge[] gameEdges = new FlowEdge[numGames];
 
             // Connect the artificial source vertex to each game vertex,
-            // and connect each game vertex with the two opposing team vertices.
-            int gameIndex = 1;
+            int t = 0;
             for (int i = 0; i < n; ++i) {
                 if (i == x)
                     continue;
-                int shiftI = i < x ? 0 : -1;
-                for (int j = i + 1; j < n; ++j) {
-                    if (j == x)
-                        continue;
-                    flowNetwork.addEdge(new FlowEdge(0, gameIndex, remainingMat[i][j]));
-                    flowNetwork.addEdge(new FlowEdge(
-                            gameIndex,
-                            1 + numGames + i + shiftI,
-                            Double.POSITIVE_INFINITY
-                    ));
-                    flowNetwork.addEdge(new FlowEdge(
-                            gameIndex,
-                            1 + numGames + j + (j < x ? 0 : -1),
-                            Double.POSITIVE_INFINITY
-                    ));
-                    ++gameIndex;
+                for (int j = i + 1; j < n; ++j)
+                    if (j != x) {
+                        gameEdges[t] = new FlowEdge(0, 1 + t, remainingMat[i][j]);
+                        flowNetwork.addEdge(gameEdges[t++]);
+                    }
+            }
+
+            // Connect each game vertex with the two opposing team vertices.
+            t = 1;
+            for (int i = 0; i < n; ++i) {
+                for (int j = i + 1; j < n - 1; ++j) {
+                    flowNetwork.addEdge(new FlowEdge(t, 1 + numGames + j, Double.POSITIVE_INFINITY));
+                    flowNetwork.addEdge(new FlowEdge(t, 1 + numGames + i, Double.POSITIVE_INFINITY));
+                    ++t;
                 }
             }
 
             // Connect each team vertex to the artificial sink vertex.
             for (int i = 0; i < n; ++i) {
-                if (i == x) {
-                    continue;
+                if (i != x) {
+                    flowNetwork.addEdge(new FlowEdge(
+                            1 + numGames + i + (i < x ? 0 : -1),
+                            n + numGames,
+                            wins[x] + remaining[x] - wins[i]
+                    ));
                 }
-                flowNetwork.addEdge(new FlowEdge(
-                        1 + numGames + i + (i < x ? 0 : -1),
-                        n + numGames,
-                        Math.max(wins[x] + remaining[x] - wins[i], 0)
-                ));
             }
-            System.out.println(x);
-            System.out.println(flowNetwork);
-            System.out.println(new FordFulkerson(flowNetwork,0,n+numGames).value());
-            System.out.println();
-            System.out.println();
 
+            FordFulkerson maxFlowSolution = new FordFulkerson(flowNetwork, 0, numGames + n);
+            boolean canWin = true;
+            for (FlowEdge edge : gameEdges)
+                if (edge.flow() < edge.capacity())
+                    canWin = false;
+            if (canWin) {
+                elimination.add(null);
+            } else {
+                Bag<String> certificate = new Bag<>();
+                for (int i = 0; i < n - 1; ++i)
+                    if (maxFlowSolution.inCut(1 + numGames + i))
+                        certificate.add(teams.get(i < x ? i : i + 1));
+                elimination.add(certificate);
+            }
         }
-
     }
 
     public int numberOfTeams() { // number of teams
@@ -120,9 +148,6 @@ public class BaseballElimination {
     }
 
     private int getTeamIndex(String team) {
-//        if(!teamIndexMap.containsKey(team))
-//            throw new IllegalArgumentException();
-//        return teamIndexMap.get(team);
         return teamIndexMap.computeIfAbsent(team, k -> {
             throw new IllegalArgumentException();
         });
