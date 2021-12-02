@@ -1,17 +1,13 @@
-import edu.princeton.cs.algs4.Queue;
-
-import java.util.Iterator;
-
 public class BoggleSolver {
 
-    private final TrieSet set;
+    private Node trieRoot;
 
     // Initializes the data structure using the given array of strings as the dictionary.
     // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
     public BoggleSolver(String[] dictionary) {
-        set = new TrieSet();
+        trieRoot = null;
         for (String word : dictionary)
-            set.add(word);
+            trieRoot = addWord(trieRoot, word, 0);
     }
 
     // Returns the set of all valid words in the given Boggle board, as an Iterable.
@@ -22,11 +18,8 @@ public class BoggleSolver {
     // Returns the score of the given word if it is in the dictionary, zero otherwise.
     // (You can assume the word contains only the uppercase letters A through Z.)
     public int scoreOf(String word) {
-        if (!set.contains(word))
-            return 0;
-
         int len = word.length();
-        if (len <= 2)
+        if (len <= 2 || !wordIsIn(trieRoot, word, 0))
             return 0;
         if (len <= 4)
             return 1;
@@ -40,112 +33,39 @@ public class BoggleSolver {
 
     }
 
-    private static class TrieSet implements Iterable<String> {
-
-        private Node root;      // root of trie
-        private int n;          // number of keys in trie
-
-        // R-way trie node
-        private static class Node {
-            private Node[] next = new Node[26];
-            private boolean isString;
+    private Node addWord(Node p, String s, int i) {
+        char c = s.charAt(i);
+        if (p == null) {
+            p = new Node();
+            p.c = c;
         }
+        if (c < p.c)
+            p.left = addWord(p.left, s, i);
+        else if (c > p.c)
+            p.right = addWord(p.right, s, i);
+        else if (i < s.length() - 1)
+            p.mid = addWord(p.mid, s, i + 1);
+        else
+            p.isEnding = true;
+        return p;
+    }
 
-        /**
-         * Initializes an empty set of strings.
-         */
-        public TrieSet() {
-            root = null;
-            n = 0;
-        }
+    private boolean wordIsIn(Node p, String s, int i) {
+        if (p == null)
+            return false;
+        char c = s.charAt(i);
+        if (c < p.c)
+            return wordIsIn(p.left, s, i);
+        if (c > p.c)
+            return wordIsIn(p.right, s, i);
+        if (i < s.length() - 1)
+            return wordIsIn(p.mid, s, i + 1);
+        return p.isEnding;
+    }
 
-        /**
-         * Does the set contain the given key?
-         *
-         * @param key the key
-         * @return {@code true} if the set contains {@code key} and
-         * {@code false} otherwise
-         * @throws IllegalArgumentException if {@code key} is {@code null}
-         */
-        public boolean contains(String key) {
-            if (key == null) throw new IllegalArgumentException("argument to contains() is null");
-            Node x = get(root, key, 0);
-            if (x == null) return false;
-            return x.isString;
-        }
-
-        private Node get(Node x, String key, int d) {
-            if (x == null) return null;
-            if (d == key.length()) return x;
-            char c = key.charAt(d);
-            return get(x.next[c], key, d + 1);
-        }
-
-        /**
-         * Adds the key to the set if it is not already present.
-         *
-         * @param key the key to add
-         * @throws IllegalArgumentException if {@code key} is {@code null}
-         */
-        public void add(String key) {
-            if (key == null) throw new IllegalArgumentException("argument to add() is null");
-            root = add(root, key, 0);
-        }
-
-        private Node add(Node x, String key, int d) {
-            if (x == null) x = new Node();
-            if (d == key.length()) {
-                if (!x.isString)
-                    ++n;
-                x.isString = true;
-            } else {
-                char c = key.charAt(d);
-                x.next[c] = add(x.next[c], key, d + 1);
-            }
-            return x;
-        }
-
-        /**
-         * Returns the number of strings in the set.
-         *
-         * @return the number of strings in the set
-         */
-        public int size() {
-            return n;
-        }
-
-        /**
-         * Is the set empty?
-         *
-         * @return {@code true} if the set is empty, and {@code false} otherwise
-         */
-        public boolean isEmpty() {
-            return size() == 0;
-        }
-
-        /**
-         * Returns all of the keys in the set, as an iterator.
-         * To iterate over all of the keys in a set named {@code set}, use the
-         * foreach notation: {@code for (Key key : set)}.
-         *
-         * @return an iterator to all of the keys in the set
-         */
-        public Iterator<String> iterator() {
-            Queue<String> results = new Queue<>();
-            Node x = get(root, "", 0);
-            collect(x, new StringBuilder(), results);
-            return results.iterator();
-        }
-
-        private void collect(Node x, StringBuilder prefix, Queue<String> results) {
-            if (x == null) return;
-            if (x.isString) results.enqueue(prefix.toString());
-            for (char c = 0; c < 26; c++) {
-                prefix.append(c);
-                collect(x.next[c], prefix, results);
-                prefix.deleteCharAt(prefix.length() - 1);
-            }
-        }
-
+    private static class Node {
+        private boolean isEnding;
+        private char c;
+        private Node left, mid, right;
     }
 }
