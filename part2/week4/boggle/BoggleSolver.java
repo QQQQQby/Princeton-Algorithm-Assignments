@@ -1,29 +1,31 @@
 import edu.princeton.cs.algs4.Bag;
+import edu.princeton.cs.algs4.In;
+import edu.princeton.cs.algs4.StdOut;
 
 import java.util.HashSet;
 
 public class BoggleSolver {
 
-    private Node trieRoot;
+    private final Node trieRoot;
 
-    private BoggleBoard board;
+    private BoggleBoard currBoard;
     private boolean[][] visited;
     private Bag<String> words;
     private HashSet<Node> visitedNodes;
 
-    private static int[][] shifts = new int[][]{{-1, -1}, {-1, 0}, {-1, 1}, {0, -1}, {0, 1}, {1, -1}, {1, 0}, {1, 1}};
-
     // Initializes the data structure using the given array of strings as the dictionary.
     // (You can assume each word in the dictionary contains only the uppercase letters A through Z.)
     public BoggleSolver(String[] dictionary) {
-        trieRoot = null;
+        Node root = null;
         for (String word : dictionary)
-            trieRoot = addWord(trieRoot, word, 0);
+            if (word.length() >= 3)
+                root = addWord(root, word, 0);
+        this.trieRoot = root;
     }
 
     // Returns the set of all valid words in the given Boggle board, as an Iterable.
     public Iterable<String> getAllValidWords(BoggleBoard board) {
-        this.board = board;
+        this.currBoard = board;
         words = new Bag<>();
         visited = new boolean[board.rows()][board.cols()];
         visitedNodes = new HashSet<>();
@@ -51,8 +53,7 @@ public class BoggleSolver {
     }
 
     private void computeValidWords(Node p, int i, int j, StringBuilder builder) {
-
-        char c = board.getLetter(i, j);
+        char c = currBoard.getLetter(i, j);
         while (p != null) {
             if (p.c < c)
                 p = p.right;
@@ -63,7 +64,6 @@ public class BoggleSolver {
         }
         if (p == null)
             return;
-
         if (c == 'Q') {
             p = p.mid;
             while (p != null) {
@@ -82,21 +82,16 @@ public class BoggleSolver {
         }
 
         visited[i][j] = true;
-
         builder.append(c);
         if (p.isEnding && !visitedNodes.contains(p)) {
             words.add(builder.toString());
             visitedNodes.add(p);
         }
-
-        for (int[] shift : shifts) {
-            int ii = i + shift[0], jj = j + shift[1];
-            if (ii >= 0 && ii < board.rows() && jj >= 0 && jj < board.cols() && !visited[ii][jj])
-                computeValidWords(p.mid, ii, jj, new StringBuilder(builder));
-        }
+        for (int ii = i - 1; ii <= i + 1; ++ii)
+            for (int jj = j - 1; jj <= j + 1; ++jj)
+                if ((ii != i || jj != j) && ii >= 0 && ii < currBoard.rows() && jj >= 0 && jj < currBoard.cols() && !visited[ii][jj])
+                    computeValidWords(p.mid, ii, jj, new StringBuilder(builder));
         visited[i][j] = false;
-
-
     }
 
     private static Node addWord(Node p, String s, int i) {
@@ -134,4 +129,19 @@ public class BoggleSolver {
         private char c;
         private Node left, mid, right;
     }
+
+
+    public static void main(String[] args) {
+        In in = new In(args[0]);
+        String[] dictionary = in.readAllStrings();
+        BoggleSolver solver = new BoggleSolver(dictionary);
+        BoggleBoard board = new BoggleBoard(args[1]);
+        int score = 0;
+        for (String word : solver.getAllValidWords(board)) {
+            StdOut.println(word);
+            score += solver.scoreOf(word);
+        }
+        StdOut.println("Score = " + score);
+    }
+
 }
