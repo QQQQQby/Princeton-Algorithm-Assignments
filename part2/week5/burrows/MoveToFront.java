@@ -6,71 +6,51 @@ public class MoveToFront {
 
     // apply move-to-front encoding, reading from standard input and writing to standard output
     public static void encode() {
-        Node head = new Node((char) 0), p = head, pre;
-        for (char c = 1; c < EXTENDED_ASCII; ++c) {
-            p.next = new Node(c);
-            p = p.next;
-        }
+        char[] chars = new char[EXTENDED_ASCII];
+        for (char i = 0; i < EXTENDED_ASCII; ++i)
+            chars[i] = i;
 
         while (!BinaryStdIn.isEmpty()) {
             char c = BinaryStdIn.readChar();
-            if (head.c == c) {
+            if (chars[0] == c) {
                 BinaryStdOut.write((byte) 0);
                 continue;
             }
 
-            int i = 1;
-            pre = head;
-            p = head.next;
-            while (p.c != c) {
-                pre = p;
-                p = p.next;
-                ++i;
-            }
+            char i;
+            for (i = 1; i < EXTENDED_ASCII; ++i)
+                if (chars[i] == c)
+                    break;
 
             BinaryStdOut.write((byte) i);
-            pre.next = p.next;
-            p.next = head;
-            head = p;
+            char t = chars[i];
+            for (; i >= 1; --i)
+                chars[i] = chars[i - 1];
+            chars[0] = t;
         }
         BinaryStdOut.close();
     }
 
     // apply move-to-front decoding, reading from standard input and writing to standard output
     public static void decode() {
-        Node head = new Node((char) 0), p = head, pre;
-        for (char c = 1; c < EXTENDED_ASCII; ++c) {
-            p.next = new Node(c);
-            p = p.next;
-        }
+        char[] chars = new char[EXTENDED_ASCII];
+        for (char i = 0; i < EXTENDED_ASCII; ++i)
+            chars[i] = i;
 
         while (!BinaryStdIn.isEmpty()) {
-            char n = BinaryStdIn.readChar();
-            if (n == 0) {
-                BinaryStdOut.write(head.c);
+            char i = BinaryStdIn.readChar();
+            if (i == 0) {
+                BinaryStdOut.write(chars[0]);
                 continue;
             }
 
-            pre = head;
-            for (int i = 1; i < n; ++i)
-                pre = pre.next;
-            p = pre.next;
-
-            BinaryStdOut.write(p.c);
-            pre.next = p.next;
-            p.next = head;
-            head = p;
+            BinaryStdOut.write(chars[i]);
+            char t = chars[i];
+            for (; i >= 1; --i)
+                chars[i] = chars[i - 1];
+            chars[0] = t;
         }
         BinaryStdOut.close();
-    }
-
-    private static class Node {
-        private final char c;
-        private Node next;
-
-        private Node(char c) {
-            this.c = c;
-        }
     }
 
     // if args[0] is "-", apply move-to-front encoding

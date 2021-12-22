@@ -1,10 +1,5 @@
 import edu.princeton.cs.algs4.BinaryStdIn;
 import edu.princeton.cs.algs4.BinaryStdOut;
-import edu.princeton.cs.algs4.Stack;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 public class BurrowsWheeler {
     private static final int EXTENDED_ASCII = 256;
@@ -12,19 +7,17 @@ public class BurrowsWheeler {
     // apply Burrows-Wheeler transform,
     // reading from standard input and writing to standard output
     public static void transform() {
-        StringBuilder builder = new StringBuilder();
-        while (!BinaryStdIn.isEmpty())
-            builder.append(BinaryStdIn.readChar());
+        String s = BinaryStdIn.readString();
 
-        CircularSuffixArray array = new CircularSuffixArray(builder.toString());
-        for (int i = 0; i < builder.length(); ++i) {
+        CircularSuffixArray array = new CircularSuffixArray(s);
+        for (int i = 0; i < s.length(); ++i) {
             if (array.index(i) == 0) {
                 BinaryStdOut.write(i);
                 break;
             }
         }
-        for (int i = 0; i < builder.length(); ++i)
-            BinaryStdOut.write(builder.charAt((array.index(i) + builder.length() - 1) % builder.length()));
+        for (int i = 0; i < s.length(); ++i)
+            BinaryStdOut.write(s.charAt((array.index(i) + s.length() - 1) % s.length()));
         BinaryStdOut.close();
     }
 
@@ -32,33 +25,26 @@ public class BurrowsWheeler {
     // reading from standard input and writing to standard output
     public static void inverseTransform() {
         int first = BinaryStdIn.readInt();
+        String s = BinaryStdIn.readString();
 
-        StringBuilder builder = new StringBuilder();
-        while (!BinaryStdIn.isEmpty())
-            builder.append(BinaryStdIn.readChar());
-
-        List<Stack<Integer>> stacks = new ArrayList<>(EXTENDED_ASCII);
-        for (int i = 0; i < EXTENDED_ASCII; ++i)
-            stacks.add(new Stack<>());
-        for (int i = builder.length() - 1; i >= 0; --i)
-            stacks.get(builder.charAt(i)).push(i);
-
-        char[] sorted = new char[builder.length()];
-        for (int i = 0; i < builder.length(); ++i)
-            sorted[i] = builder.charAt(i);
-        Arrays.sort(sorted);
-
-        int[] next = new int[builder.length()];
-        for (int i = 0; i < builder.length(); ++i)
-            next[i] = stacks.get(sorted[i]).pop();
-
-        int curr = next[first];
-        for (int i = 1; i < builder.length(); ++i) {
-            BinaryStdOut.write(builder.charAt(curr));
-            curr = next[curr];
+        int[] counts = new int[EXTENDED_ASCII + 1];
+        char[] sorted = new char[s.length()];
+        int[] next = new int[s.length()];
+        for (int i = 0; i < s.length(); ++i)
+            ++counts[s.charAt(i) + 1];
+        for (int r = 0; r < EXTENDED_ASCII; ++r)
+            counts[r + 1] += counts[r];
+        for (int i = 0; i < s.length(); ++i) {
+            int t = counts[s.charAt(i)]++;
+            sorted[t] = s.charAt(i);
+            next[t] = i;
         }
 
-        BinaryStdOut.write(builder.charAt(first));
+        for (int i = 0; i < s.length(); ++i) {
+            BinaryStdOut.write(sorted[first]);
+            first = next[first];
+        }
+
         BinaryStdOut.close();
     }
 
