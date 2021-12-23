@@ -27,17 +27,18 @@ public class BurrowsWheeler {
         int first = BinaryStdIn.readInt();
         String s = BinaryStdIn.readString();
 
-        int[] counts = new int[EXTENDED_ASCII + 1];
+        int[] indexes = new int[EXTENDED_ASCII + 1];
+        for (int i = 0; i < s.length(); ++i)
+            ++indexes[s.charAt(i) + 1];
+        for (int i = 1; i <= EXTENDED_ASCII; ++i)
+            indexes[i] += indexes[i - 1];
+
         char[] sorted = new char[s.length()];
         int[] next = new int[s.length()];
-        for (int i = 0; i < s.length(); ++i)
-            ++counts[s.charAt(i) + 1];
-        for (int r = 0; r < EXTENDED_ASCII; ++r)
-            counts[r + 1] += counts[r];
         for (int i = 0; i < s.length(); ++i) {
-            int t = counts[s.charAt(i)]++;
-            sorted[t] = s.charAt(i);
-            next[t] = i;
+            int j = indexes[s.charAt(i)]++;
+            sorted[j] = s.charAt(i);
+            next[j] = i;
         }
 
         for (int i = 0; i < s.length(); ++i) {

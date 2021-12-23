@@ -1,5 +1,3 @@
-import java.util.Arrays;
-
 public class CircularSuffixArray {
 
     private final int[] indexes;
@@ -8,21 +6,37 @@ public class CircularSuffixArray {
     public CircularSuffixArray(String s) {
         if (s == null)
             throw new IllegalArgumentException();
-        Integer[] mids = new Integer[s.length()];
-        for (int i = 0; i < s.length(); ++i)
-            mids[i] = i;
-        Arrays.sort(mids, (i, j) -> {
-            for (int k = 0; k < s.length(); ++i, ++j, ++k) {
-                int t = Character.compare(s.charAt(i % s.length()), s.charAt(j % s.length()));
-                if (t != 0)
-                    return t;
-            }
-            return 0;
-        });
 
         indexes = new int[s.length()];
         for (int i = 0; i < s.length(); ++i)
-            indexes[i] = mids[i];
+            indexes[i] = i;
+        sort(s, 0, s.length() - 1, 0);
+    }
+
+    // 3-way quick sort starting at dth character
+    private void sort(String s, int lo, int hi, int d) {
+        if (lo >= hi || d >= s.length())
+            return;
+
+        int lt = lo, gt = hi;
+        int mid = s.charAt((indexes[lo] + d) % s.length());
+        int i = lo + 1;
+        while (i <= gt) {
+            int c = s.charAt((indexes[i] + d) % s.length());
+            if (c < mid) swap(lt++, i++);
+            else if (c > mid) swap(i, gt--);
+            else ++i;
+        }
+
+        sort(s, lo, lt - 1, d);
+        sort(s, lt, gt, d + 1);
+        sort(s, gt + 1, hi, d);
+    }
+
+    private void swap(int i, int j) {
+        int t = indexes[i];
+        indexes[i] = indexes[j];
+        indexes[j] = t;
     }
 
     // length of s
@@ -39,8 +53,8 @@ public class CircularSuffixArray {
 
     // unit testing (required)
     public static void main(String[] args) {
-        CircularSuffixArray array = new CircularSuffixArray("ABRACADABRA!");
-        for (int i = 0; i < 12; ++i)
+        CircularSuffixArray array = new CircularSuffixArray("couscous");
+        for (int i = 0; i < array.length(); ++i)
             System.out.println(array.index(i));
     }
 }
